@@ -1,0 +1,258 @@
+unit Impressora;
+
+interface
+
+uses
+  Windows, Messages, Graphics, Controls, Forms, Dialogs, StdCtrls, Printers, ACBrEscBematech,
+
+  System.SysUtils,
+  System.Types,
+  System.UITypes,
+  System.Classes,
+  System.Variants;
+
+type
+  TFontSize = (fsNormal, fsMedium, fsLargeCondensed, fsLarge);
+
+  TAlignment = (alLeft, alCenter, alRight);
+
+  TQRCodeSize = (fsSmall, fsBig);
+
+  TQRCodeMargin = (fsOff, fsOn);
+
+    TForm1 = class(TForm)
+    BtnListarImpressoras: TButton;
+    ListBoxLocal: TListBox;
+    ListBoxRede: TListBox;
+    procedure BtnListarImpressorasClick(Sender: TObject);
+    procedure SetFontSize(FontSize: TFontSize);
+    procedure SetAlignment(Alignment: TAlignment);
+  private
+    { Private declarations }
+  public
+    procedure ClearBuffer;
+    procedure PrintQRCode(Text: String; QRCodeAlign: TAlignment = alLeft; QRCodeMargin: TQRCodeMargin = fsOff; QRCodeSize: TQRCodeSize = fsSmall);
+    procedure PrintBarCode(Text: String; BarAlign: TAlignment = alLeft);
+    procedure LineBreak;
+    procedure CodeBar(Text: String);
+    { Public declarations }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.dfm}
+type
+  TPassThroughData = record
+      nLen: Word;
+      Data: array[0..255] of Byte;
+end;
+
+procedure PrintText(s: AnsiString);
+var
+  PTBlock: TPassThroughData;
+begin
+  PTBlock.nLen := Length(s);
+  StrPCopy(@PTBlock.Data, s);
+  Escape(Printer.Handle, PASSTHROUGH, 0, @PTBlock, nil);
+end;
+
+ procedure TForm1.BtnListarImpressorasClick(Sender: TObject);
+ Var
+   I : Integer;
+   prt : TPrinter;
+ begin
+  Printer.BeginDoc;
+
+//   ClearBuffer;
+//   SetFontSize(fsNormal);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Print Size Medium
+//   SetFontSize(fsMedium);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Print Size LargeCondensed
+//   SetFontSize(fsLargeCondensed);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Print Size Large
+//   SetFontSize(fsLarge);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //End FontSize
+//
+//   //---------------------------------
+//
+//   //Begin Alignment
+//
+//   //Left
+//   SetFontSize(fsNormal);
+//   SetAlignment(alLeft);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Center
+//   SetAlignment(alCenter);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Right
+//   SetAlignment(alRight);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   //Todos os alinhamentos funcionam com qualquer FontSize, basta realizar a chamada conforme o que está abaixo.
+//   SetFontSize(fsMedium);
+//   SetAlignment(alCenter);
+//   PrintText('TEST PRINT');
+//   LineBreak;
+//
+//   PrintText(Chr(27) + Chr(100) + Chr(1));
+//
+//   //End Alignment
+//
+//   //---------------------------------
+//
+//   //Begin QRCode
+//
+//   //QRCodeSize Small
+   ClearBuffer;
+
+
+   PrintQRCode('http://www.google.com', alLeft, fsOff, fsSmall);
+   LineBreak;
+
+//   //QRCodeSize Big
+//   PrintQRCode('http://www.google.com', alLeft, fsOff, fsBig);
+//   LineBreak;
+//
+//   //QRCodeAlign Left
+//   PrintQRCode('http://www.google.com', alLeft, fsOff, fsSmall);
+//   LineBreak;
+//
+//   //QRCodeAlign Center
+//   PrintQRCode('http://www.google.com', alCenter, fsOff, fsSmall);
+//   LineBreak;
+//
+//   //QRCodeAlign Right
+//   PrintQRCode('http://www.google.com', alRight, fsOff, fsSmall);
+//   LineBreak;
+//
+//   //Todos os alinhamentos funcionam com qualquer QRCodeSize, basta realizar a chamada conforme o que está abaixo.
+//   PrintQRCode('http://www.google.com', alCenter, fsOff, fsBig);
+//   LineBreak;
+//
+//   //End QRCode
+//
+//   //---------------------------------
+//
+//   //Begin BarCode
+//   //BarCodeAlign Left
+//   ClearBuffer;
+//   PrintBarCode('692015246102', alLeft);
+//
+//   //BarCodeAlign Center
+//   ClearBuffer;
+//   PrintBarCode('692015246102', alCenter);
+//
+//   //BarCodeAlign Right
+//   ClearBuffer;
+//   PrintBarCode('692015246102', alRight);
+   Printer.EndDoc;
+end;
+
+procedure TForm1.PrintBarCode(Text: String; BarAlign: TAlignment = alLeft);
+begin
+  SetAlignment(BarAlign);
+  PrintText(Chr(29) + Chr(107) + Chr(67) + Chr(12) + Text);
+end;
+
+
+procedure TForm1.PrintQRCode(Text: String; QRCodeAlign: TAlignment = alLeft; QRCodeMargin: TQRCodeMargin = fsOff; QRCodeSize: TQRCodeSize = fsSmall);
+var
+  iTamanho1, iTamanho2, i, align, size: integer;
+  cBuffer, cCaracter : AnsiString;
+  F : System.Text;
+begin
+  ClearBuffer;
+  if Length(text) > 255 then
+  begin
+    iTamanho1 := Length(text) mod 255;
+    iTamanho2 := Length(text) div 255;
+  end
+  else
+  begin
+    iTamanho1 := Length(text);
+    iTamanho2 := 0;
+  end;
+  for i := 1 to Length(text) do
+  begin
+    cCaracter := cCaracter + Chr(ord(text[i]));
+  end;
+
+  //setQRCodeALign
+  case QRCodeAlign of
+    alLeft:     align := 0;
+    alCenter:   align := 1;
+    alRight:    align := 2;
+  end;
+
+  //setQRCodeSize
+  case QRCodeSize of
+    fsSmall: size := 8;
+    fsBig:  size := 14;
+  end;
+
+  //printQRCode
+  cBuffer := chr(27) + chr(97) + chr(align) + chr(29) + chr(107) + chr(81) + chr(1) + chr(size) + chr(8) + chr(1) +
+              chr(iTamanho1) + chr(iTamanho2) + cCaracter + chr(13);
+  AssignFile(F,'COM7');
+  Rewrite(F);
+  Writeln(F,cBuffer);
+  CloseFile(F);
+end;
+
+procedure TForm1.SetFontSize(FontSize: TFontSize);
+begin
+  case FontSize of
+    fsNormal:         PrintText(Chr(27) + Chr(33) + Chr(0));
+    fsMedium:         PrintText(Chr(27) + Chr(33) + Chr(20));
+    fsLargeCondensed: PrintText(Chr(27) + Chr(33) + Chr(40));
+    fsLarge:          PrintText(Chr(27) + Chr(33) + Chr(60));
+  end;
+end;
+
+procedure TForm1.SetAlignment(Alignment: TAlignment);
+begin
+  case Alignment of
+    alLeft:   PrintText(Chr(27) + Chr(97) + Chr(0));
+    alCenter: PrintText(Chr(27) + Chr(97) + Chr(1));
+    alRight:  PrintText(Chr(27) + Chr(97) + Chr(2));
+  end;
+end;
+
+procedure TForm1.CodeBar(Text: String);
+begin
+  ClearBuffer;
+  PrintText(chr(27) + chr(100) + chr(5));
+  PrintText(chr(29) + chr(107) + chr(2) + Text + chr(0));
+  PrintText(chr(27) + chr(100) + chr(5));
+end;
+
+procedure TForm1.ClearBuffer;
+begin
+  PrintText(chr(27) + chr(64));
+end;
+
+procedure TForm1.LineBreak;
+begin
+  PrintText(Chr(10));
+end;
+end.
